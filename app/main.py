@@ -2,11 +2,14 @@ from fastapi import FastAPI
 from app.store import client
 from app.models import CheckRequest, CheckResponse
 from app.limiter import check_fixed_window
-from app.limiter import check_fixed_window, check_sliding_window
+from app.limiter import check_fixed_window, check_sliding_window, check_token_bucket
 
 app = FastAPI(title="Rate Limiter as a Service")
-ALGOS = {"fixed": check_fixed_window, "sliding": check_sliding_window}
-
+ALGOS = {
+    "fixed": check_fixed_window,
+    "sliding": check_sliding_window,
+    "token": check_token_bucket,
+}
 
 @app.get("/health")
 async def health():

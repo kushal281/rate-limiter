@@ -8,13 +8,19 @@ SCRIPTS = Path(__file__).parent / "scripts"
 fixed_window_script = client.register_script(
     (SCRIPTS / "fixed_window.lua").read_text()
 )
+
 sliding_window_script = client.register_script(
     (SCRIPTS / "sliding_window.lua").read_text()
+)
+
+token_bucket_script = client.register_script(
+    (SCRIPTS / "token_bucket.lua").read_text()
 )
 
 
 # Temporary hardcoded limits; replaced by per-key config in Step 5
 LIMIT = 5
+BURST = 5  # bucket capacity
 WINDOW_SECONDS = 10
 
 
@@ -39,4 +45,11 @@ async def check_sliding_window(api_key: str, identifier: str, cost: int) -> dict
     raw = await sliding_window_script(
         keys=[key], args=[LIMIT, WINDOW_SECONDS, cost, uuid.uuid4().hex]
     )
+    return _result(raw)
+
+
+async def check_token_bucket(api_key: str, identifier: str, cost: int) -> dict:
+    key = f"rl:tb:{api_key}:{identifier}"
+    refill_rate = LIMIT / WINDOW_SECONDS  # tokens per second
+    raw = await token_bucket_script(keys=[key], args=[BURST, refill_rate, cost])
     return _result(raw)
