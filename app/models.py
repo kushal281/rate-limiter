@@ -10,10 +10,11 @@ class CheckRequest(BaseModel):
 
 class CheckResponse(BaseModel):
     allowed: bool
+    limit: int
     remaining: int
     retry_after: float  # seconds
     reset_at: float     # unix seconds
-
+    
 
 class LimitConfig(BaseModel):
     algorithm: Literal["fixed_window", "sliding_window", "token_bucket"]

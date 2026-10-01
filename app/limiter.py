@@ -19,10 +19,11 @@ token_bucket_script = client.register_script(
 )
 
 
-def _result(raw) -> dict:
+def _result(raw, cfg) -> dict:
     allowed, remaining, retry_ms, reset_ms = raw
     return {
         "allowed": bool(allowed),
+        "limit": cfg.limit,
         "remaining": remaining,
         "retry_after": retry_ms / 1000,
         "reset_at": reset_ms / 1000,
@@ -34,7 +35,7 @@ async def check_fixed_window(api_key, identifier, cost, cfg: LimitConfig) -> dic
     raw = await fixed_window_script(
         keys=[key], args=[cfg.limit, cfg.window_seconds, cost]
     )
-    return _result(raw)
+    return _result(raw, cfg)
 
 
 async def check_sliding_window(api_key, identifier, cost, cfg: LimitConfig) -> dict:
@@ -42,14 +43,14 @@ async def check_sliding_window(api_key, identifier, cost, cfg: LimitConfig) -> d
     raw = await sliding_window_script(
         keys=[key], args=[cfg.limit, cfg.window_seconds, cost, uuid.uuid4().hex]
     )
-    return _result(raw)
+    return _result(raw, cfg)
 
 
 async def check_token_bucket(api_key, identifier, cost, cfg: LimitConfig) -> dict:
     key = f"rl:tb:{api_key}:{identifier}"
     refill_rate = cfg.limit / cfg.window_seconds  # tokens per second
     raw = await token_bucket_script(keys=[key], args=[cfg.burst, refill_rate, cost])
-    return _result(raw)
+    return _result(raw, cfg)
 
 
 ALGOS = {
