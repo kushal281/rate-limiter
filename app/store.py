@@ -2,8 +2,13 @@ import redis.asyncio as redis
 from app.config import REDIS_URL
 from app.models import LimitConfig
 
-# One client for the whole app; it manages a connection pool internally.
-client = redis.from_url(REDIS_URL, decode_responses=True)
+pool = redis.BlockingConnectionPool.from_url(
+    REDIS_URL,
+    max_connections=100,
+    timeout=5,
+    decode_responses=True,
+)
+client = redis.Redis(connection_pool=pool)
 
 def _cfg_key(api_key: str) -> str:
     return f"cfg:{api_key}"

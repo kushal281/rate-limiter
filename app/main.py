@@ -4,6 +4,9 @@ from redis.exceptions import RedisError
 from app import limiter
 from app.models import CheckRequest, CheckResponse, LimitConfig
 from app.store import client, get_config, save_config, delete_config
+import logging
+
+logger = logging.getLogger("uvicorn.error")
 
 app = FastAPI(title="Rate Limiter as a Service")
 
@@ -28,7 +31,8 @@ async def check(req: CheckRequest):
             raise HTTPException(status_code=404, detail="Unknown api_key")
         fail_open_cache[req.api_key] = cfg.fail_open
         return await limiter.check(req.api_key, req.identifier, req.cost, cfg)
-    except RedisError:
+    except RedisError as e:
+        logger.error("Redis error on /check: %s: %s", type(e).__name__, e)
         if fail_open_cache.get(req.api_key, False):
             # remaining=-1 means "unknown"
             return {"allowed": True, "remaining": -1, "retry_after": 0.0, "reset_at": 0.0}
