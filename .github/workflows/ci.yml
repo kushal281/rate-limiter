@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install test dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Start the stack
+        run: docker compose up -d --build
+
+      - name: Wait for API and demo app
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8000/health && curl -s -o /dev/null http://localhost:8001/ && exit 0
+            sleep 2
+          done
+          docker compose logs
+          exit 1
+
+      - name: Run tests
+        run: pytest -v
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs
