@@ -97,7 +97,9 @@ k6, ramping to 200 virtual users over 70 s against `POST /check` (token bucket, 
 
 297,372 requests in the final run; median latency 35 ms.
 
-**What the test found.** At 200 concurrent users the default Redis client raised `MaxConnectionsError: Too many connections`, which the service turned into 503s. Switching to a `BlockingConnectionPool` (requests wait for a free connection instead of failing) removed the errors, and running 4 workers removed the queueing that was driving latency.
+**What the test found.** At 200 concurrent users the default Redis client raised `MaxConnectionsError: Too many connections`, which the service turned into 503s. Switching to a `BlockingConnectionPool` (requests wait for a free connection instead of failing) cut errors from 27.7% to about 0.3% (the remainder were requests that hit the 5 s pool timeout), and running 4 workers removed the queueing that was driving latency.
+
+Single-worker numbers vary by about 25% between runs on a laptop; the gap to 4 workers is consistent.
 
 Reproduce:
 
