@@ -40,24 +40,24 @@ flowchart LR
 
 ## Algorithms
 
-| | Fixed window | Sliding window (log) | Token bucket |
-|---|---|---|---|
-| How it works | One counter per window (`INCRBY` + `EXPIRE`) | Sorted set of request timestamps, old ones dropped | Tokens refill at a steady rate up to a capacity |
-| Accuracy | Allows up to 2x bursts at window edges | Exact | Exact for the average rate |
-| Burst handling | Poor at edges | None beyond the limit | Controlled bursts up to `burst` |
-| Memory per key | O(1) | O(limit) | O(1) |
-| Best for | Simple, cheap limits | Strict, accurate limits | APIs that allow short bursts |
+|                | Fixed window                                     | Sliding window (log)                               | Token bucket                                    |
+| -------------- | ------------------------------------------------ | -------------------------------------------------- | ----------------------------------------------- |
+| How it works   | One counter per window (`INCRBY` + `EXPIRE`) | Sorted set of request timestamps, old ones dropped | Tokens refill at a steady rate up to a capacity |
+| Accuracy       | Allows up to 2x bursts at window edges           | Exact                                              | Exact for the average rate                      |
+| Burst handling | Poor at edges                                    | None beyond the limit                              | Controlled bursts up to`burst`                |
+| Memory per key | O(1)                                             | O(limit)                                           | O(1)                                            |
+| Best for       | Simple, cheap limits                             | Strict, accurate limits                            | APIs that allow short bursts                    |
 
 ## API
 
-| Method | Route | Purpose |
-|---|---|---|
-| POST | `/check` | Check and consume quota |
-| GET | `/status/{api_key}/{identifier}` | Peek remaining quota (consumes nothing) |
-| GET | `/limits/{api_key}` | View config |
-| PUT | `/limits/{api_key}` | Create or update config |
-| DELETE | `/limits/{api_key}` | Remove config |
-| GET | `/health` | Health check (pings Redis) |
+| Method | Route                              | Purpose                                 |
+| ------ | ---------------------------------- | --------------------------------------- |
+| POST   | `/check`                         | Check and consume quota                 |
+| GET    | `/status/{api_key}/{identifier}` | Peek remaining quota (consumes nothing) |
+| GET    | `/limits/{api_key}`              | View config                             |
+| PUT    | `/limits/{api_key}`              | Create or update config                 |
+| DELETE | `/limits/{api_key}`              | Remove config                           |
+| GET    | `/health`                        | Health check (pings Redis)              |
 
 ```bash
 BASE=https://rate-limiter-04h6.onrender.com
@@ -89,11 +89,11 @@ curl $BASE/status/demo/user-1
 
 k6, ramping to 200 virtual users over 70 s against `POST /check` (token bucket, 1000 distinct identifiers). Run locally in Docker Desktop with k6, the API and Redis all on one machine.
 
-| Setup | Throughput | p95 | p99 | Errors |
-|---|---|---|---|---|
-| 1 uvicorn worker, default Redis pool | 1,502 req/s | 184 ms | 226 ms | 27.7% |
-| 1 worker, blocking pool (max 100) | 1,236 req/s | 195 ms | n/a | 0.32% |
-| **4 workers, blocking pool** | **4,248 req/s** | **61 ms** | **81 ms** | **0%** |
+| Setup                                | Throughput            | p95             | p99             | Errors       |
+| ------------------------------------ | --------------------- | --------------- | --------------- | ------------ |
+| 1 uvicorn worker, default Redis pool | 1,502 req/s           | 184 ms          | 226 ms          | 27.7%        |
+| 1 worker, blocking pool (max 100)    | 1,236 req/s           | 195 ms          | 282 ms          | 0.32%        |
+| **4 workers, blocking pool**   | **4,248 req/s** | **61 ms** | **81 ms** | **0%** |
 
 297,372 requests in the final run; median latency 35 ms.
 
