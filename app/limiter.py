@@ -9,13 +9,20 @@ SCRIPTS = Path(__file__).parent / "scripts"
 fixed_window_script = client.register_script(
     (SCRIPTS / "fixed_window.lua").read_text()
 )
-
 sliding_window_script = client.register_script(
     (SCRIPTS / "sliding_window.lua").read_text()
 )
-
 token_bucket_script = client.register_script(
     (SCRIPTS / "token_bucket.lua").read_text()
+)
+peek_fixed_window_script = client.register_script(
+    (SCRIPTS / "peek_fixed_window.lua").read_text()
+)
+peek_sliding_window_script = client.register_script(
+    (SCRIPTS / "peek_sliding_window.lua").read_text()
+)
+peek_token_bucket_script = client.register_script(
+    (SCRIPTS / "peek_token_bucket.lua").read_text()
 )
 
 
@@ -62,3 +69,22 @@ ALGOS = {
 
 async def check(api_key, identifier, cost, cfg: LimitConfig) -> dict:
     return await ALGOS[cfg.algorithm](api_key, identifier, cost, cfg)
+
+
+async def peek(api_key, identifier, cfg: LimitConfig) -> dict:
+    """Remaining quota without consuming any."""
+    if cfg.algorithm == "fixed_window":
+        raw = await peek_fixed_window_script(
+            keys=[f"rl:fw:{api_key}:{identifier}"], args=[cfg.limit]
+        )
+    elif cfg.algorithm == "sliding_window":
+        raw = await peek_sliding_window_script(
+            keys=[f"rl:sw:{api_key}:{identifier}"], args=[cfg.limit, cfg.window_seconds]
+        )
+    else:
+        refill_rate = cfg.limit / cfg.window_seconds
+        raw = await peek_token_bucket_script(
+            keys=[f"rl:tb:{api_key}:{identifier}"], args=[cfg.burst, refill_rate]
+        )
+    remaining, reset_ms = raw
+    return {"limit": cfg.limit, "remaining": remaining, "reset_at": reset_ms / 1000}

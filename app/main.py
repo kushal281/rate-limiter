@@ -39,6 +39,18 @@ async def check(req: CheckRequest):
         raise HTTPException(status_code=503, detail="Rate limiter store unavailable")
 
 
+@app.get("/status/{api_key}/{identifier}")
+async def status(api_key: str, identifier: str):
+    try:
+        cfg = await get_config(api_key)
+        if cfg is None:
+            raise HTTPException(status_code=404, detail="Unknown api_key")
+        return await limiter.peek(api_key, identifier, cfg)
+    except RedisError as e:
+        logger.error("Redis error on /status: %s: %s", type(e).__name__, e)
+        raise HTTPException(status_code=503, detail="Rate limiter store unavailable")
+
+
 @app.put("/limits/{api_key}", response_model=LimitConfig)
 async def put_limits(api_key: str, cfg: LimitConfig):
     return await save_config(api_key, cfg)
